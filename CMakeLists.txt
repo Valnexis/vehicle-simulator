@@ -15,8 +15,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # =================================
 # EXECUTABLE TARGET
 # =================================
-add_executable(vehicle_simulator
-        src/main.cpp)
+add_executable(vehicle_simulator)
 
 # =================================
 # SOURCE FILES
@@ -24,7 +23,6 @@ add_executable(vehicle_simulator
 target_sources(vehicle_simulator
     PRIVATE
         src/main.cpp
-
         src/sim/Simulation.cpp
         src/vehicle/Vehicle.cpp
 )

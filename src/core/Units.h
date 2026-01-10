@@ -1,8 +1,10 @@
-//
-// Created by Ilgın Yılmaz on 10.01.2026.
-//
+#pragma once
 
-#ifndef VEHICLE_SIMULATOR_UNITS_H
-#define VEHICLE_SIMULATOR_UNITS_H
-
-#endif //VEHICLE_SIMULATOR_UNITS_H
+namespace units {
+    using Torque = double;      // Nm
+    using Power = double;       // W
+    using RPM = double;         // external
+    using AngularVel = double;  // rad/s internal
+    using Speed = double;       // m/s
+    using Mass = double;        // kg
+}
