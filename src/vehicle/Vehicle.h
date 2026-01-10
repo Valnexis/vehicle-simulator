@@ -1,8 +1,14 @@
-//
-// Created by Ilgın Yılmaz on 10.01.2026.
-//
+#pragma once
+#include "../powertrain/Engine.h"
+#include "../powertrain/Transmission.h"
 
-#ifndef VEHICLE_SIMULATOR_VEHICLE_H
-#define VEHICLE_SIMULATOR_VEHICLE_H
+class Vehicle {
+public:
+    Vehicle(Engine* engine, Transmission* transmission);
 
-#endif //VEHICLE_SIMULATOR_VEHICLE_H
+    void step(double dt);
+
+private:
+    Engine* m_engine;
+    Transmission* m_transmission;
+};
