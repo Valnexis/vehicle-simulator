@@ -1,8 +1,10 @@
-//
-// Created by Ilgın Yılmaz on 10.01.2026.
-//
+#pragma once
+#include "../core/Units.h"
 
-#ifndef VEHICLE_SIMULATOR_TRANSMISSION_H
-#define VEHICLE_SIMULATOR_TRANSMISSION_H
+class Transmission {
+public:
+    virtual ~Transmission() = default;
 
-#endif //VEHICLE_SIMULATOR_TRANSMISSION_H
+    virtual int currentGear() const = 0;
+    virtual units::Torque transmit(units::Torque engineTorque)
+};

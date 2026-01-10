@@ -1,8 +1,13 @@
-//
-// Created by Ilgın Yılmaz on 10.01.2026.
-//
+#pragma once
+#include "../core/Units.h"
 
-#ifndef VEHICLE_SIMULATOR_ENGINE_H
-#define VEHICLE_SIMULATOR_ENGINE_H
+class Engine {
+public:
+    virtual ~Engine() = default;
 
-#endif //VEHICLE_SIMULATOR_ENGINE_H
+    virtual units::RPM rpm() const = 0;
+    virtual units::Torque outputTorque() const = 0;
+
+    virtual void setThrottle(double throttle) = 0;
+    virtual void step(double dt) = 0;
+};
