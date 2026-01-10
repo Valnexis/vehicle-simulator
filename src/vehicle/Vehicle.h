@@ -1,0 +1,8 @@
+//
+// Created by Ilgın Yılmaz on 10.01.2026.
+//
+
+#ifndef VEHICLE_SIMULATOR_VEHICLE_H
+#define VEHICLE_SIMULATOR_VEHICLE_H
+
+#endif //VEHICLE_SIMULATOR_VEHICLE_H
