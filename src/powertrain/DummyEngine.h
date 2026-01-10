@@ -1,8 +1,11 @@
-//
-// Created by Ilgın Yılmaz on 10.01.2026.
-//
+#pragma once
+#include "Engine.h"
 
-#ifndef VEHICLE_SIMULATOR_DUMMYENGINE_H
-#define VEHICLE_SIMULATOR_DUMMYENGINE_H
+class DummyEngine : public Engine {
+public:
+    units::RPM rpm() const override {return 1000.0;}
+    units::Torque outputTorque() const override {return 120.0;}
 
-#endif //VEHICLE_SIMULATOR_DUMMYENGINE_H
+    void setThrottle(double throttle) override;
+    void step(double dt) override;
+};

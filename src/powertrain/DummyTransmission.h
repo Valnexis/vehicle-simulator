@@ -1,8 +1,11 @@
-//
-// Created by Ilgın Yılmaz on 10.01.2026.
-//
+#pragma once
+#include "Transmission.h"
 
-#ifndef VEHICLE_SIMULATOR_DUMMYTRANSMISSION_H
-#define VEHICLE_SIMULATOR_DUMMYTRANSMISSION_H
+class DummyTransmission : public Transmission {
+public:
+    int currentGear() const override {return 1;}
 
-#endif //VEHICLE_SIMULATOR_DUMMYTRANSMISSION_H
+    units::Torque transmit(units::Torque torque) override {
+        return torque * 0.9;
+    }
+};
