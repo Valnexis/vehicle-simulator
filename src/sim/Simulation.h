@@ -1,8 +1,13 @@
-//
-// Created by Ilgın Yılmaz on 10.01.2026.
-//
+#pragma once
 
-#ifndef VEHICLE_SIMULATOR_SIMULATION_H
-#define VEHICLE_SIMULATOR_SIMULATION_H
+class Simulation {
+public:
+    explicit Simulation(double timestepSeconds);
 
-#endif //VEHICLE_SIMULATOR_SIMULATION_H
+    void step();
+    double time() const;
+
+private:
+    double m_time;
+    double m_dt;
+};
