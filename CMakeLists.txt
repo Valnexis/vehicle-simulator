@@ -15,7 +15,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # =================================
 # EXECUTABLE TARGET
 # =================================
-add_executable(vehicle_simulator)
+add_executable(vehicle_simulator
+    src/main.cpp
+    src/sim/loop.cpp)
 
 # =================================
 # SOURCE FILES

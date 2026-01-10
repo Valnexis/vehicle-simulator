@@ -1,20 +1,12 @@
 #include <iostream>
-#include "sim/Simulation.h"
-#include "powertrain/DummyEngine.h"
-#include "powertrain/DummyTransmission.h"
-#include "vehicle/Vehicle.h"
+#include "sim/loop.hpp"
 
 int main() {
-    Simulation sim(0.001); // 1ms
+    sim::SimulationLoop loop(0.01); // 10 ms fixed step
 
-    DummyEngine engine;
-    DummyTransmission transmission;
-    Vehicle vehicle(&engine, &transmission);
+    loop.run([](const sim::SimulationTime& time) {
+        std::cout << "Sim time: " << time.sim_time << " s\n";
+    });
 
-    for (int i = 0; i < 5000; ++i) {
-        vehicle.step(0.001);
-        sim.step();
-    }
-
-    std::cout << "Simulation time: " << sim.time() << " seconds\n";
+    return 0;
 }
