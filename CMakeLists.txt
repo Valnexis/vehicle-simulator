@@ -23,8 +23,12 @@ add_executable(vehicle_simulator)
 target_sources(vehicle_simulator
     PRIVATE
         src/main.cpp
+
         src/sim/Simulation.cpp
         src/vehicle/Vehicle.cpp
+
+        src/powertrain/DummyEngine.cpp
+        src/powertrain/DummyTransmission.cpp
 )
 
 # =================================
