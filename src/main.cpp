@@ -1,30 +1,34 @@
 #include <iostream>
 #include "sim/loop.hpp"
-#include "core/rotating_body.hpp"
-#include "core/units/rotational/rpm.hpp"
+#include "vehicle/vehicle.hpp"
 
 int main() {
+    // Fixed timestep: 10 ms
     sim::SimulationLoop loop(0.01);
 
-    RotatingBody::Params p;
-    p.inertia = units::KilogramMeterSquared{0.15};
-    p.viscous = units::NewtonMeterPerRadPerSec{0.08}; // drag
-    p.coulomb = units::NewtonMeter{2.0};              // friction
-    p.stop_epsilon_rad_per_sec = 0.3;
+    // --- Vehicle specification (physical constants)
+    vehicle::VehicleSpec spec{};
+    spec.mass_kg = 1500.0;
+    spec.frontal_area_m2 = 2.2;
+    spec.drag_coefficient = 0.30;
+    spec.rolling_resistance_coeff = 0.012;
 
-    RotatingBody shaft{p};
+    // --- Vehicle instance (STATE lives here)
+    vehicle::Vehicle car{spec};
 
-    loop.run([&](const sim::SimulationTime& time) {
-        // "engine torque"
-        shaft.add_torque(units::NewtonMeter{120.0});
+    // --- Run simulation
+    loop.run([&car](const sim::SimulationTime& time) {
+        constexpr double traction_force_N = 6000.0;
 
-        // pretend drivetrain load (negative torque)
-        shaft.set_external_load(units::NewtonMeter{-30.0});
+        car.update(traction_force_N, time.sim_dt);
 
-        shaft.integrate(time.sim_dt);
+        const double speed_mps = car.state().velocity.value;
+        const double speed_kmh = speed_mps * 3.6;
 
-        const auto rpm = units::to_rpm(shaft.velocity());
-        std::cout << rpm.value << "\n";
+        std::cout
+            << "t=" << time.sim_time.value << " s | "
+            << "v=" << speed_kmh << " km/h | "
+            << "x=" << car.state().position.value << " m\n";
     });
 
     return 0;
