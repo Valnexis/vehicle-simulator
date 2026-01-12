@@ -18,7 +18,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # =================================
 add_executable(vehicle_simulator
     src/main.cpp
-    src/sim/loop.cpp)
+    src/sim/loop.cpp
+    src/engine/engine.cpp)
 
 # =================================
 # SOURCE FILES

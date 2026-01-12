@@ -7,6 +7,8 @@
 #include "controls/SDLKeyboard.h"
 #include "drivetrain/Gearbox.h"
 #include "vehicle/VehicleState.h"
+#include "engine/engine.hpp"
+#include "engine/torque_curve.hpp"
 
 int main() {
     constexpr double dt = 1.0 / 60.0;
@@ -19,6 +21,25 @@ int main() {
     SDLKeyboard keyboard;
     SDLKeyboardState keys;
 
+    // --- Engine setup ---
+    TorqueCurve torqueCurve({
+        { 800,  120 },
+        { 1500, 220 },
+        { 3000, 300 },
+        { 4500, 310 },
+        { 6000, 280 },
+        { 7000, 200 }
+    });
+
+    EngineSpecs engineSpecs {
+        .idleRPM = 800,
+        .redlineRPM = 7000,
+        .inertia = 0.25,
+        .frictionCoeff = 0.02
+    };
+
+    Engine engine(engineSpecs, torqueCurve);
+
     if (!keyboard.ok()) {
         std::cerr << "SDL keyboard init failed.\n";
         return 1;
@@ -27,11 +48,6 @@ int main() {
     bool running = true;
     double time = 0.0;
     int frame = 0;
-
-    // --- Dummy tuning constants ---
-    constexpr double maxAccel = 6.0;   // m/s² at full throttle, 1st gear
-    constexpr double brakeDecel = 10.0; // m/s²
-    constexpr double drag = 0.6;        // fake rolling + aero drag
 
     std::cout <<
         "Controls:\n"
@@ -66,23 +82,43 @@ int main() {
             keys.clutch
         );
 
-        // --- Dummy longitudinal model ---
-        double accel = 0.0;
+        double loadTorque = 0.0;
 
         bool drivetrainEngaged =
             !keys.clutch &&
             gearbox.currentRatio() != 0.0;
 
         if (drivetrainEngaged) {
-            accel += inputs.throttle *
-                     maxAccel *
-                     std::abs(gearbox.currentRatio());
+            loadTorque =
+                vehicle.speed * 20.0 *
+                std::abs(gearbox.currentRatio());
         }
 
-        accel -= inputs.brake * brakeDecel;
-        accel -= drag * vehicle.speed;
+        engine.update(
+            dt,
+            inputs.throttle,
+            loadTorque,
+            vehicle.speed);
+
+        double wheelForce = 0.0;
+
+        if (drivetrainEngaged && engine.isRunning()) {
+            double driveTorque =
+                engine.getTorque() *
+                gearbox.currentRatio();
+
+            wheelForce = driveTorque / 0.32; // wheel radius (m)
+        }
+
+        double accel =
+            (wheelForce / 1400.0)   // vehicle mass (kg)
+            - inputs.brake * 8.0
+            - 0.4 * vehicle.speed;
 
         vehicle.speed += accel * dt;
+
+        if (vehicle.speed < 0.0)
+            vehicle.speed = 0.0;
 
         if (vehicle.speed < 0.0)
             vehicle.speed = 0.0;
@@ -92,13 +128,31 @@ int main() {
         // --- Telemetry (10 Hz) ---
         if (++frame % 6 == 0) {
             std::system("clear");
+
             std::cout << "Time:     " << time << " s\n";
             std::cout << "Speed:    " << vehicle.speedKmh() << " km/h\n";
+
+            std::cout << "\n--- Engine ---\n";
+            std::cout << "RPM:      " << engine.getRPM() << "\n";
+            std::cout << "Torque:   " << engine.getTorque() << " Nm\n";
+            std::cout << "Power:    " << engine.getPowerKW() << " kW\n";
+
+            std::cout << "\n--- Fuel ---\n";
+            std::cout << "Tank:     "
+                      << engine.getFuelTank().currentLiters
+                      << " L\n";
+            std::cout << "Instant:  "
+                      << engine.getInstantConsumption()
+                      << " L/100km\n";
+            std::cout << "Average:  "
+                      << engine.getConsumption().averageLper100km()
+                      << " L/100km\n";
+
+            std::cout << "\n--- Controls ---\n";
             std::cout << "Throttle: " << inputs.throttle * 100 << " %\n";
             std::cout << "Brake:    " << inputs.brake * 100 << " %\n";
             std::cout << "Clutch:   " << inputs.clutch * 100 << " %\n";
             std::cout << "Gear:     " << gearbox.currentGear << "\n";
-            std::cout << "Ratio:    " << gearbox.currentRatio() << "\n";
         }
 
         std::this_thread::sleep_for(
