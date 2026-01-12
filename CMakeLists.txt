@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
+find_package(SDL2 REQUIRED)
 
 project(vehicle_simulator
         VERSION 0.0.1
@@ -39,6 +40,7 @@ target_sources(vehicle_simulator
 target_include_directories(vehicle_simulator
     PRIVATE
         src
+        ${SDL2_INCLUDE_DIRS}
 )
 
 # =================================
@@ -69,4 +71,8 @@ target_compile_definitions(vehicle_simulator
 # =================================
 set_target_properties(vehicle_simulator PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+)
+
+target_link_libraries(vehicle_simulator PRIVATE
+    SDL2::SDL2
 )
