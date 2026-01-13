@@ -5,23 +5,47 @@
 #include "controls/DriverInputs.h"
 #include "controls/DriverController.h"
 #include "controls/SDLKeyboard.h"
+
 #include "drivetrain/Gearbox.h"
+#include "powertrain/ManualTransmission.h"
+
+#include "vehicle/Vehicle.h"
 #include "vehicle/VehicleState.h"
+
 #include "engine/engine.hpp"
 #include "engine/torque_curve.hpp"
 
 int main() {
     constexpr double dt = 1.0 / 60.0;
 
+    // -----------------------------
+    // Input system
+    // -----------------------------
     DriverInputs inputs;
     DriverController controller;
-    Gearbox gearbox;
-    VehicleState vehicle;
 
     SDLKeyboard keyboard;
     SDLKeyboardState keys;
 
-    // --- Engine setup ---
+    if (!keyboard.ok()) {
+        std::cerr << "SDL keyboard init failed.\n";
+        return 1;
+    }
+
+    // -----------------------------
+    // Vehicle state
+    // -----------------------------
+    VehicleState vehicleState;
+
+    // -----------------------------
+    // Gearbox & transmission
+    // -----------------------------
+    Gearbox gearbox;
+    ManualTransmission transmission(gearbox);
+
+    // -----------------------------
+    // Engine setup
+    // -----------------------------
     TorqueCurve torqueCurve({
         { 800,  120 },
         { 1500, 220 },
@@ -40,11 +64,14 @@ int main() {
 
     Engine engine(engineSpecs, torqueCurve);
 
-    if (!keyboard.ok()) {
-        std::cerr << "SDL keyboard init failed.\n";
-        return 1;
-    }
+    // -----------------------------
+    // Vehicle (powertrain owner)
+    // -----------------------------
+    Vehicle vehicle(engine, transmission, vehicleState);
 
+    // -----------------------------
+    // Runtime state
+    // -----------------------------
     bool running = true;
     double time = 0.0;
     int frame = 0;
@@ -58,22 +85,18 @@ int main() {
         " X     = Gear Up\n"
         " Q     = Quit\n";
 
+    // =============================
+    // Main loop
+    // =============================
     while (running) {
         keyboard.poll(keys);
 
         if (keys.quit)
             running = false;
 
-        // --- Gear logic ---
-        if (keys.gearDown && keys.clutch && gearbox.currentGear > 0)
-            gearbox.currentGear--;
-
-        if (keys.gearUp &&
-            keys.clutch &&
-            gearbox.currentGear < (int)gearbox.gearRatios.size() - 1)
-            gearbox.currentGear++;
-
-        // --- Pedals ---
+        // -------------------------
+        // Driver input update
+        // -------------------------
         controller.update(
             inputs,
             dt,
@@ -82,60 +105,41 @@ int main() {
             keys.clutch
         );
 
-        double loadTorque = 0.0;
+        // -------------------------
+        // Gear shifting
+        // -------------------------
+        if (keys.gearDown && keys.clutch)
+            transmission.shiftDown();
 
-        bool drivetrainEngaged =
-            !keys.clutch &&
-            gearbox.currentRatio() != 0.0;
+        if (keys.gearUp && keys.clutch)
+            transmission.shiftUp();
 
-        if (drivetrainEngaged) {
-            loadTorque =
-                vehicle.speed * 20.0 *
-                std::abs(gearbox.currentRatio());
-        }
+        transmission.setClutch(inputs.clutch);
 
-        engine.update(
-            dt,
-            inputs.throttle,
-            loadTorque,
-            vehicle.speed);
-
-        double wheelForce = 0.0;
-
-        if (drivetrainEngaged && engine.isRunning()) {
-            double driveTorque =
-                engine.getTorque() *
-                gearbox.currentRatio();
-
-            wheelForce = driveTorque / 0.32; // wheel radius (m)
-        }
-
-        double accel =
-            (wheelForce / 1400.0)   // vehicle mass (kg)
-            - inputs.brake * 8.0
-            - 0.4 * vehicle.speed;
-
-        vehicle.speed += accel * dt;
-
-        if (vehicle.speed < 0.0)
-            vehicle.speed = 0.0;
-
-        if (vehicle.speed < 0.0)
-            vehicle.speed = 0.0;
+        // -------------------------
+        // Vehicle step (ALL physics)
+        // -------------------------
+        vehicle.step(dt, inputs);
 
         time += dt;
 
-        // --- Telemetry (10 Hz) ---
+        // -------------------------
+        // Telemetry (≈10 Hz)
+        // -------------------------
         if (++frame % 6 == 0) {
             std::system("clear");
 
             std::cout << "Time:     " << time << " s\n";
-            std::cout << "Speed:    " << vehicle.speedKmh() << " km/h\n";
+            std::cout << "Speed:    " << vehicleState.speedKmh() << " km/h\n";
 
             std::cout << "\n--- Engine ---\n";
             std::cout << "RPM:      " << engine.getRPM() << "\n";
             std::cout << "Torque:   " << engine.getTorque() << " Nm\n";
             std::cout << "Power:    " << engine.getPowerKW() << " kW\n";
+
+            std::cout << "\n--- Drivetrain ---\n";
+            std::cout << "Gear:     " << transmission.currentGear() << "\n";
+            std::cout << "Wheel Tq: " << vehicle.wheelTorque() << " Nm\n";
 
             std::cout << "\n--- Fuel ---\n";
             std::cout << "Tank:     "
@@ -152,7 +156,6 @@ int main() {
             std::cout << "Throttle: " << inputs.throttle * 100 << " %\n";
             std::cout << "Brake:    " << inputs.brake * 100 << " %\n";
             std::cout << "Clutch:   " << inputs.clutch * 100 << " %\n";
-            std::cout << "Gear:     " << gearbox.currentGear << "\n";
         }
 
         std::this_thread::sleep_for(
